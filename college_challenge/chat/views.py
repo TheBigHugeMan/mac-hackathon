@@ -1,6 +1,6 @@
 # chat/views.py
 
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
@@ -9,6 +9,7 @@ from .models import ChatRoom, Message
 from .serializers import ChatRoomSerializer, MessageSerializer
 from users.models import Match
 from challenges.models import Challenge
+from django.contrib.auth.decorators import login_required
 
 class ChatRoomViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ChatRoomSerializer
@@ -171,3 +172,39 @@ def chat_room_view(request, room_id):
     }
     
     return render(request, 'chat/chat_room.html', context)
+
+# chat/views.py (additional functions)
+
+
+@login_required
+def chat_room_list_view(request):
+    user = request.user
+    
+    # Get matches where user is a participant
+    matches = Match.objects.filter(
+        (models.Q(user1=user) | models.Q(user2=user)) & 
+        models.Q(status='ACCEPTED')
+    )
+    
+    # Get chat rooms for these matches
+    chat_rooms = []
+    for match in matches:
+        chat_room = ChatRoom.objects.filter(match=match).first()
+        if chat_room:
+            # Get the other user
+            other_user = match.user2 if user == match.user1 else match.user1
+            
+            # Get the latest message
+            latest_message = Message.objects.filter(chat_room=chat_room).order_by('-timestamp').first()
+            
+            chat_rooms.append({
+                'room': chat_room,
+                'other_user': other_user,
+                'latest_message': latest_message
+            })
+    
+    context = {
+        'chat_rooms': chat_rooms,
+    }
+    
+    return render(request, 'chat/chat_room_list.html', context)

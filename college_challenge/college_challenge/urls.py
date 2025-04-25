@@ -15,31 +15,17 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 # college_challenge/urls.py
-
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from rest_framework.routers import DefaultRouter
-from users.views import UserViewSet
-from challenges.views import ChallengeViewSet, TransactionViewSet
-from chat.views import ChatRoomViewSet
-
-# API Router
-router = DefaultRouter()
-router.register(r'users', UserViewSet)
-router.register(r'challenges', ChallengeViewSet)
-router.register(r'transactions', TransactionViewSet, basename='transaction')
-router.register(r'chat-rooms', ChatRoomViewSet, basename='chatroom')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('users.urls')),
     path('challenges/', include('challenges.urls')),
     path('chat/', include('chat.urls')),
-    path('api/', include(router.urls)),
-    path('api-auth/', include('rest_framework.urls')),
-]
-
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    path('api/', include('users.api_urls')),
+    path('api/challenges/', include('challenges.api_urls')),
+    path('api/chat/', include('chat.api_urls')),
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

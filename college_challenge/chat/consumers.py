@@ -3,8 +3,10 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
+from django.contrib.auth import get_user_model
 from .models import ChatRoom, Message
-from users.models import User
+
+User = get_user_model()
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -17,7 +19,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
         
+        # Accept the connection
         await self.accept()
+        
+        # Load chat history
+        messages = await self.get_chat_history()
+        if messages:
+            await self.send(text_data=json.dumps({
+                'type': 'history',
+                'messages': messages
+            }))
     
     async def disconnect(self, close_code):
         # Leave room group
@@ -28,12 +39,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
     
     # Receive message from WebSocket
     async def receive(self, text_data):
-        data = json.loads(text_data)
-        message = data['message']
-        username = data['username']
+        text_data_json = json.loads(text_data)
+        message = text_data_json['message']
         
-        # Save message to database
-        await self.save_message(username, message)
+        # Save the message to the database
+        user = self.scope["user"]
+        msg_obj = await self.save_message(user.id, message)
         
         # Send message to room group
         await self.channel_layer.group_send(
@@ -41,27 +52,55 @@ class ChatConsumer(AsyncWebsocketConsumer):
             {
                 'type': 'chat_message',
                 'message': message,
-                'username': username
+                'username': user.username,
+                'timestamp': msg_obj['timestamp'].isoformat(),
+                'message_id': msg_obj['id']
             }
         )
     
     # Receive message from room group
     async def chat_message(self, event):
-        message = event['message']
-        username = event['username']
-        
         # Send message to WebSocket
         await self.send(text_data=json.dumps({
-            'message': message,
-            'username': username
+            'type': 'message',
+            'message': event['message'],
+            'username': event['username'],
+            'timestamp': event['timestamp'],
+            'message_id': event['message_id']
         }))
     
     @database_sync_to_async
-    def save_message(self, username, message):
-        user = User.objects.get(username=username)
-        chat_room = ChatRoom.objects.get(id=int(self.room_id))
-        Message.objects.create(
-            chat_room=chat_room,
+    def get_chat_history(self):
+        try:
+            room = ChatRoom.objects.get(id=self.room_id)
+            messages = Message.objects.filter(
+                room=room
+            ).order_by('timestamp')[:50]  # Last 50 messages
+            
+            return [
+                {
+                    'message': msg.content,
+                    'username': msg.sender.username,
+                    'timestamp': msg.timestamp.isoformat(),
+                    'message_id': msg.id
+                }
+                for msg in messages
+            ]
+        except ChatRoom.DoesNotExist:
+            return None
+    
+    @database_sync_to_async
+    def save_message(self, user_id, content):
+        user = User.objects.get(id=user_id)
+        room = ChatRoom.objects.get(id=self.room_id)
+        
+        msg = Message.objects.create(
             sender=user,
-            content=message
+            room=room,
+            content=content
         )
+        
+        return {
+            'id': msg.id,
+            'timestamp': msg.timestamp
+        }
