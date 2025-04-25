@@ -2,26 +2,44 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 
 class ChallengeConsumer(AsyncWebsocketConsumer):
-    #Accepts WebSocket connections and sends a welcome message.
     async def connect(self):
-        # Accept the connection
-        await self.accept()
-        # Send a welcome message
-        await self.send(text_data=json.dumps({
-            'message': 'Welcome to the challenge lobby!'
-        }))
+        self.challenge_id = self.scope['url_route']['kwargs']['challenge_id']
+        self.room_group_name = f'challenge_{self.challenge_id}'
 
-    #Is set up for cleanup if needed.
+        # Join room group
+        await self.channel_layer.group_add(
+            self.room_group_name,
+            self.channel_name
+        )
+
+        await self.accept()
+
     async def disconnect(self, close_code):
-        # Perform any necessary cleanup here
-        pass
-    
-    #Echoes back any message it receives in a simple JSON payload.
+        # Leave room group
+        await self.channel_layer.group_discard(
+            self.room_group_name,
+            self.channel_name
+        )
+
+    # Receive message from WebSocket
     async def receive(self, text_data):
-        # Parse the incoming message
         text_data_json = json.loads(text_data)
-        message = text_data_json.get('message', '')
-        # Echo the message back to the client (or broadcast it)
+        message = text_data_json['message']
+
+        # Send message to room group
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'challenge_message',
+                'message': message
+            }
+        )
+
+    # Receive message from room group
+    async def challenge_message(self, event):
+        message = event['message']
+
+        # Send message to WebSocket
         await self.send(text_data=json.dumps({
-            'message': message,
+            'message': message
         }))

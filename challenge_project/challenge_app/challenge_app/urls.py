@@ -15,8 +15,18 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from django.views.generic import RedirectView  # Import RedirectView
+from . import views
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('challenges/', include('challenges.urls')),
+    # Add a URL pattern for the root path - redirect to challenges or create a home view
+    path('', RedirectView.as_view(url='/challenges/', permanent=True)),
+    path('', views.challenges_home, name='challenges_home'),
+    path('test-ws/', views.test_websocket, name='test_websocket'),
+    # Alternatively, you can create a home view
+    # path('', views.home, name='home'),
 ]

@@ -1,32 +1,16 @@
-"""
-ASGI config for challenge_app project.
-
-It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
-"""
-
 import os
-import django
+from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
-from django.core.asgi import get_asgi_application
 from channels.auth import AuthMiddlewareStack
-import challenges.routing  
-from django.core.asgi import get_asgi_application
+import chat.routing
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'challenge_app.settings')
-django.setup()
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'challenge_app.challenge_app.settings')
 
 application = ProtocolTypeRouter({
-    # Serve traditional HTTP requests by Django
-    'http': get_asgi_application(),
-
-    # Add WebSocket support:
-    'websocket': AuthMiddlewareStack(
+    "http": get_asgi_application(),
+    "websocket": AuthMiddlewareStack(
         URLRouter(
-            challenges.routing.websocket_urlpatterns
+            chat.routing.websocket_urlpatterns
         )
     ),
 })
-
