@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+</head>
+<body>
+    <h1>WebSocket Connection Test</h1>
+    <div id="output"></div>
+    <input type="text" id="messageInput" placeholder="Enter message">
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+        var ws = new WebSocket('ws://127.0.0.1:8000/ws/challenges/');
+        ws.onopen = function(e) {
+            document.getElementById("output").innerHTML += "Connected!<br/>";
+        };
+        ws.onmessage = function(e) {
+            var data = JSON.parse(e.data);
+            document.getElementById("output").innerHTML += "Received: " + data.message + "<br/>";
+        };
+        function sendMessage() {
+            var input = document.getElementById("messageInput").value;
+            ws.send(JSON.stringify({'message': input}));
+        }
+    </script>
+</body>
+</html>
