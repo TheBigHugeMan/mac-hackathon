@@ -186,7 +186,7 @@
                                         <h6 class="mb-0">{{ challenge.get_game_type_display }}</h6>
                                         <small class="text-muted">
                                             {{ challenge.wager }} tokens
-                                            • {{ challenge.created_at|date:"M d, H:i" }}
+                                             {{ challenge.created_at|date:"M d, H:i" }}
                                         </small>
                                     </div>
                                 </div>
@@ -213,7 +213,9 @@
                     </div>
                     {% else %}
                     <div class="text-center py-4">
-                        <img src="{% static 'img/empty-challenges.svg' %}" alt="No challenges" class="img-fluid mb-3" style="max-height: 150px;">
+                        <div class="card-img-top" style="text-align: center;">
+                            <i class="bi-file-x" style="font-size: 100%;"></i>
+                        </div>
                         <h5>No challenges yet</h5>
                         <p class="text-muted">Start matching with other students to create challenges!</p>
                         <a href="{% url 'match' %}" class="btn btn-primary">Find Matches</a>
@@ -273,7 +275,9 @@
                     </div>
                     {% else %}
                     <div class="text-center py-4">
-                        <img src="{% static 'img/empty-matches.svg' %}" alt="No matches" class="img-fluid mb-3" style="max-height: 150px;">
+                        <div class="card-img-top" style="text-align: center;">
+                            <i class="bi-pin-map-fill" style="font-size: 100%;"></i>
+                        </div>
                         <h5>No matches yet</h5>
                         <p class="text-muted">Find and match with other students to get started!</p>
                         <a href="{% url 'match' %}" class="btn btn-primary">Find Matches</a>
@@ -289,7 +293,9 @@
             <div class="row mb-4">
                 <div class="col-6">
                     <div class="card action-card h-100">
-                        <img src="{% static 'img/find-matches.jpg' %}" class="card-img-top" alt="Find Matches">
+                        <div class="card-img-top" style="text-align: center;">
+                            <i class="bi-joystick" style="font-size: 100px;"></i>
+                        </div>
                         <div class="card-body text-center">
                             <h5 class="card-title">Find Matches</h5>
                             <p class="card-text small">Match with other students</p>
@@ -299,7 +305,9 @@
                 </div>
                 <div class="col-6">
                     <div class="card action-card h-100">
-                        <img src="{% static 'img/chat.jpg' %}" class="card-img-top" alt="Chat">
+                        <div class="card-img-top" style="text-align: center;">
+                            <i class="bi-chat-dots" style="font-size: 100px;"></i>
+                        </div>
                         <div class="card-body text-center">
                             <h5 class="card-title">My Chats</h5>
                             <p class="card-text small">Chat with your matches</p>

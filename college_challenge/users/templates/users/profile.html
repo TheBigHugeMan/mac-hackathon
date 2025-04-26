@@ -36,12 +36,13 @@
     .stat-card .stat-value {
         font-size: 2.5rem;
         font-weight: bold;
+        text-shadow: 2px 2px 0px #000000;;
     }
     
     .stat-card .stat-label {
         text-transform: uppercase;
         font-size: 0.8rem;
-        color: #6c757d;
+        color: #f8f9fa;
         letter-spacing: 1px;
     }
     
@@ -77,30 +78,31 @@
                         Edit Profile
                     </button>
                 </div>
+
             </div>
             
             <!-- Stats Cards -->
             <div class="row">
                 <div class="col-md-6 col-lg-12">
-                    <div class="stat-card bg-primary text-white">
+                    <div class="stat-card text-white" style="background-color: blue;">
                         <div class="stat-value">{{ win_rate }}%</div>
                         <div class="stat-label">Win Rate</div>
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-12">
-                    <div class="stat-card bg-success text-white">
+                    <div class="stat-card text-white" style="background-color: orangered;">
                         <div class="stat-value">{{ user.current_streak }}</div>
                         <div class="stat-label">Current Streak</div>
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-12">
-                    <div class="stat-card bg-info text-white">
+                    <div class="stat-card text-white" style="background-color: violet;">
                         <div class="stat-value">{{ user.rating|floatformat:0 }}</div>
                         <div class="stat-label">Rating</div>
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-12">
-                    <div class="stat-card bg-secondary text-white">
+                    <div class="stat-card bg-warning text-white">
                         <div class="stat-value">{{ total_games }}</div>
                         <div class="stat-label">Total Games</div>
                     </div>

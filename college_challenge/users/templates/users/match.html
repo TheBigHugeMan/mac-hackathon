@@ -264,7 +264,9 @@
             {% else %}
             <div class="no-matches">
                 <div class="mb-4">
-                    <img src="{% static 'img/no-matches.svg' %}" alt="No matches" class="img-fluid" style="max-height: 200px;">
+                    <div class="card-img-top" style="text-align: center;">
+                        <i class="bi-x-lg" style="font-size: 100px;"></i>
+                    </div>  
                 </div>
                 <h3 class="mb-3">No more students to match with right now!</h3>
                 <p class="text-muted">Check back later or invite more students to join the platform.</p>
