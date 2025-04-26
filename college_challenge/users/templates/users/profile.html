@@ -63,8 +63,11 @@
             <!-- Profile Card -->
             <div class="card mb-4">
                 <div class="card-body text-center">
-                    <img src="{{ user.profile_picture.url|default:'https://via.placeholder.com/150' }}" 
-                         alt="{{ user.username }}" class="profile-picture mb-3">
+                    {% if user_match.profile_picture %}
+                        <img src="{{ user_match.profile_picture.url }}" class="card-img" alt="{{ user_match.username }}">
+                    {% else %}
+                        <img src="https://via.placeholder.com/400x300" class="card-img" alt="{{ user_match.username }}">
+                    {% endif %}
                     <h3>{{ user.username }}</h3>
                     <p class="text-muted">{{ user.program }}{% if user.major %}, {{ user.major }}{% endif %}</p>
                     <div class="mb-3">

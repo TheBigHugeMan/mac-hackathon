@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from .models import Challenge, CoinFlipGame, DiceRollGame, Transaction
 from .serializers import ChallengeSerializer, CreateChallengeSerializer, AcceptChallengeSerializer
 from users.models import Match
+from django.db import models
 
 class ChallengeViewSet(viewsets.ModelViewSet):
     queryset = Challenge.objects.all()

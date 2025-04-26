@@ -207,8 +207,11 @@
                     {% for user_match in potential_matches %}
                     <div class="tinder-card" data-user-id="{{ user_match.id }}">
                         <div class="tinder-card-inner">
-                            <img src="{{ user_match.profile_picture.url|default:'https://via.placeholder.com/400x300' }}" 
-                                 class="card-img" alt="{{ user_match.username }}">
+                            {% if user_match.profile_picture %}
+                                <img src="{{ user_match.profile_picture.url }}" class="card-img" alt="{{ user_match.username }}">
+                            {% else %}
+                                <img src="https://via.placeholder.com/400x300" class="card-img" alt="{{ user_match.username }}">
+                            {% endif %}
                             <div class="card-content">
                                 <h3 class="mb-2">{{ user_match.username }}</h3>
                                 <p class="mb-2">{{ user_match.program }}{% if user_match.major %}, {{ user_match.major }}{% endif %}</p>
@@ -277,7 +280,11 @@
     <div class="match-content">
         <h2 class="text-success mb-3">It's a Match!</h2>
         <div class="match-images">
-            <img src="{{ user.profile_picture.url|default:'https://via.placeholder.com/100' }}" class="match-image" alt="Your Profile">
+            {% if user_match.profile_picture %}
+                <img src="{{ user_match.profile_picture.url }}" class="card-img" alt="{{ user_match.username }}">
+            {% else %}
+                <img src="https://via.placeholder.com/400x300" class="card-img" alt="{{ user_match.username }}">
+            {% endif %}
             <img id="matched-user-img" src="" class="match-image" alt="Matched User">
         </div>
         <h4 class="mb-4">You and <span id="matched-username"></span> matched!</h4>
