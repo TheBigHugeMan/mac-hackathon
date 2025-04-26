@@ -76,7 +76,7 @@
                         <div class="card-body">
                             <div class="d-flex align-items-center mb-3">
                                 <div class="position-relative me-3">
-                                    <img src="{{ chat.other_user.profile_picture.url|default:'https://via.placeholder.com/48' }}" 
+                                    <img src="{% if chat.other_user.profile_picture %}{{ chat.other_user.profile_picture.url }}{% else %}https://via.placeholder.com/48{% endif %}"
                                          class="rounded-circle user-avatar">
                                     <span class="badge-offline"></span>
                                 </div>
