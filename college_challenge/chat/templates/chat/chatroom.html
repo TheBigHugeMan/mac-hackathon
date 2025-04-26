@@ -151,8 +151,10 @@
         
         function connectWebSocket() {
             // Create WebSocket connection
+            // Check if using HTTPS and use WSS if so
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             chatSocket = new WebSocket(
-                'ws://' + window.location.host + '/ws/chat/' + roomId + '/'
+                wsProtocol + '//' + window.location.host + '/ws/chat/' + roomId + '/'
             );
             
             chatSocket.onopen = function(e) {

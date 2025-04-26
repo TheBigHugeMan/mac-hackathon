@@ -199,10 +199,18 @@ def chat_room_list(request):
             # Get the latest message
             latest_message = Message.objects.filter(chat_room=chat_room).order_by('-timestamp').first()
             
+            # Check for active challenge
+            from challenges.models import Challenge
+            active_challenge = Challenge.objects.filter(
+                match=match,
+                status__in=['PENDING', 'ACCEPTED']
+            ).first()
+            
             chat_rooms.append({
                 'room': chat_room,
                 'other_user': other_user,
-                'latest_message': latest_message
+                'latest_message': latest_message,
+                'active_challenge': active_challenge
             })
     
     context = {

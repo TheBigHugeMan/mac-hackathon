@@ -214,3 +214,26 @@ def challenge_detail(request, pk):
     }
     
     return render(request, 'challenges/challenge_detail.html', context)
+
+@action(detail=True, methods=['post'])
+def reject_challenge(self, request, pk=None):
+    """Reject a pending challenge"""
+    challenge = self.get_object()
+    user = request.user
+    
+    # Verify user is the opponent in this challenge
+    if user != challenge.opponent:
+        return Response({"error": "Only the opponent can reject this challenge"}, 
+                      status=status.HTTP_403_FORBIDDEN)
+                       
+    if challenge.status != 'PENDING':
+        return Response({"error": f"Challenge is already {challenge.get_status_display()}"}, 
+                       status=status.HTTP_400_BAD_REQUEST)
+    
+    # Reject the challenge
+    success = challenge.reject()
+    if not success:
+        return Response({"error": "Unable to reject challenge"}, 
+                       status=status.HTTP_400_BAD_REQUEST)
+    
+    return Response(ChallengeSerializer(challenge).data)
