@@ -25,7 +25,7 @@ urlpatterns = [
     path('', include('users.urls')),
     path('challenges/', include('challenges.urls')),
     path('chat/', include('chat.urls')),
-    path('api/', include('users.api_urls')),
+    path('api/users/', include('users.api_urls')),
     path('api/challenges/', include('challenges.api_urls')),
     path('api/chat/', include('chat.api_urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

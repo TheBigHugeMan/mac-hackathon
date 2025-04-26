@@ -38,12 +38,12 @@
                         
                         <div class="mb-3">
                             <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
-                            {{ form.username|add_class:"form-control" }}
+                            <input type="text" name="{{ form.username.html_name }}" class="form-control" id="{{ form.username.id_for_label }}" required>
                         </div>
                         
                         <div class="mb-4">
                             <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
-                            {{ form.password|add_class:"form-control" }}
+                            <input type="password" name="{{ form.password.html_name }}" class="form-control" id="{{ form.password.id_for_label }}" required>
                         </div>
                         
                         <div class="d-grid">

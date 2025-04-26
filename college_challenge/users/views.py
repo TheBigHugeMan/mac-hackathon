@@ -12,20 +12,9 @@ from .serializers import (
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import UserCreationForm
 from django.db import models
+from .forms import UserRegisterForm, UserProfileForm
 from chat.models import ChatRoom
-
-class UserRegisterForm(UserCreationForm):
-    class Meta:
-        model = User
-        fields = ['username', 'program', 'major', 'profile_picture', 'password1', 'password2']
-
-class UserProfileForm(UserCreationForm):
-    class Meta:
-        model = User
-        fields = ['username', 'program', 'major', 'profile_picture']
-        exclude = ['password1', 'password2']
 
 def home_view(request):
     """Home page view"""
@@ -59,7 +48,8 @@ def home_view(request):
         }
         return render(request, 'users/dashboard.html', context)
     
-    return render(request, 'users/home.html')
+    # If not authenticated, show the landing page
+    return render(request, 'home.html')
 
 def register_view(request):
     """User registration view"""

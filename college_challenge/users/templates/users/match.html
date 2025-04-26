@@ -1,0 +1,475 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Find Matches - College Challenge{% endblock %}
+
+{% block extra_css %}
+<style>
+    .cards-container {
+        position: relative;
+        width: 100%;
+        max-width: 400px;
+        height: 500px;
+        margin: 0 auto;
+    }
+    
+    .card-deck {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .tinder-card {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        cursor: pointer;
+        user-select: none;
+        transform-origin: center bottom;
+    }
+    
+    .tinder-card.removed {
+        transition: transform 0.5s ease-out;
+        pointer-events: none;
+    }
+    
+    .tinder-card.removed.left {
+        transform: translateX(-1000px) rotate(-30deg);
+    }
+    
+    .tinder-card.removed.right {
+        transform: translateX(1000px) rotate(30deg);
+    }
+    
+    .tinder-card-inner {
+        width: 100%;
+        height: 100%;
+        background-color: #fff;
+        border-radius: 20px;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .card-img {
+        width: 100%;
+        height: 60%;
+        object-fit: cover;
+    }
+    
+    .card-content {
+        padding: 20px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .card-actions {
+        position: absolute;
+        bottom: 20px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: space-around;
+        z-index: 10;
+    }
+    
+    .btn-action {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+    }
+    
+    .btn-reject {
+        background-color: #ff4d4d;
+        color: white;
+    }
+    
+    .btn-like {
+        background-color: #2ecc71;
+        color: white;
+    }
+    
+    .no-matches {
+        height: 500px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .overlay-stamp {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-30deg);
+        font-size: 5rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        padding: 10px 30px;
+        border: 10px solid;
+        border-radius: 10px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease-in-out;
+    }
+    
+    .overlay-stamp.like {
+        color: #2ecc71;
+        border-color: #2ecc71;
+    }
+    
+    .overlay-stamp.nope {
+        color: #ff4d4d;
+        border-color: #ff4d4d;
+    }
+    
+    .match-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    
+    .match-modal.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .match-content {
+        max-width: 500px;
+        width: 90%;
+        padding: 30px;
+        background-color: white;
+        border-radius: 20px;
+        text-align: center;
+        animation: bounce 0.5s ease;
+    }
+    
+    @keyframes bounce {
+        0% { transform: scale(0.5); }
+        70% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+    
+    .match-images {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+    
+    .match-image {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #2ecc71;
+    }
+    
+    .match-image:first-child {
+        margin-right: -20px;
+    }
+    
+    .match-image:last-child {
+        margin-left: -20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8 text-center">
+            <h1 class="mb-4">Find Students to Challenge</h1>
+            <p class="lead mb-5">Swipe right on students you'd like to challenge, or left to pass.</p>
+            
+            {% if potential_matches %}
+            <div class="cards-container">
+                <div class="card-deck" id="card-deck">
+                    {% for user_match in potential_matches %}
+                    <div class="tinder-card" data-user-id="{{ user_match.id }}">
+                        <div class="tinder-card-inner">
+                            <img src="{{ user_match.profile_picture.url|default:'https://via.placeholder.com/400x300' }}" 
+                                 class="card-img" alt="{{ user_match.username }}">
+                            <div class="card-content">
+                                <h3 class="mb-2">{{ user_match.username }}</h3>
+                                <p class="mb-2">{{ user_match.program }}{% if user_match.major %}, {{ user_match.major }}{% endif %}</p>
+                                
+                                <div class="d-flex mt-2 justify-content-between">
+                                    <div>
+                                        <span class="badge bg-primary">{{ user_match.win_count }} Wins</span>
+                                        <span class="badge bg-secondary">{{ user_match.loss_count }} Losses</span>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-info">{{ user_match.token_balance }} Tokens</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <div class="progress" style="height: 10px;">
+                                        {% if user_match.win_count > 0 or user_match.loss_count > 0 %}
+                                            {% with total=user_match.win_count|add:user_match.loss_count %}
+                                            {% if total > 0 %}
+                                                {% with win_percent=user_match.win_count|floatformat:0 %}
+                                                <div class="progress-bar bg-success" role="progressbar" 
+                                                    style="width: {{ win_percent }}%" 
+                                                    aria-valuenow="{{ win_percent }}" aria-valuemin="0" aria-valuemax="100">
+                                                </div>
+                                                {% endwith %}
+                                            {% endif %}
+                                            {% endwith %}
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">Win Rate</small>
+                                </div>
+                            </div>
+                            
+                            <div class="overlay-stamp like">MATCH</div>
+                            <div class="overlay-stamp nope">PASS</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="card-actions">
+                    <button class="btn btn-action btn-reject" id="reject-btn">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                    <button class="btn btn-action btn-like" id="like-btn">
+                        <i class="bi bi-check-lg"></i>
+                    </button>
+                </div>
+            </div>
+            {% else %}
+            <div class="no-matches">
+                <div class="mb-4">
+                    <img src="{% static 'img/no-matches.svg' %}" alt="No matches" class="img-fluid" style="max-height: 200px;">
+                </div>
+                <h3 class="mb-3">No more students to match with right now!</h3>
+                <p class="text-muted">Check back later or invite more students to join the platform.</p>
+                <a href="{% url 'home' %}" class="btn btn-primary mt-3">Back to Home</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Match Success Modal -->
+<div class="match-modal" id="match-modal">
+    <div class="match-content">
+        <h2 class="text-success mb-3">It's a Match!</h2>
+        <div class="match-images">
+            <img src="{{ user.profile_picture.url|default:'https://via.placeholder.com/100' }}" class="match-image" alt="Your Profile">
+            <img id="matched-user-img" src="" class="match-image" alt="Matched User">
+        </div>
+        <h4 class="mb-4">You and <span id="matched-username"></span> matched!</h4>
+        <p class="mb-4">Now you can chat and challenge each other to games.</p>
+        <div class="d-grid gap-2">
+            <a href="#" id="start-chat-btn" class="btn btn-primary btn-lg">Start Chatting</a>
+            <button class="btn btn-outline-secondary" id="keep-swiping-btn">Keep Swiping</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Elements
+        const cardDeck = document.getElementById('card-deck');
+        const rejectBtn = document.getElementById('reject-btn');
+        const likeBtn = document.getElementById('like-btn');
+        const matchModal = document.getElementById('match-modal');
+        const matchedUserImg = document.getElementById('matched-user-img');
+        const matchedUsername = document.getElementById('matched-username');
+        const startChatBtn = document.getElementById('start-chat-btn');
+        const keepSwipingBtn = document.getElementById('keep-swiping-btn');
+        
+        let cards = document.querySelectorAll('.tinder-card');
+        let currentCardIndex = cards.length - 1;
+        let hammertime;
+        
+        // Initialize
+        function initCards() {
+            cards.forEach(function(card, index) {
+                card.style.zIndex = cards.length - index;
+                card.style.transform = 'scale(' + (20 - index) / 20 + ') translateY(-' + index * 10 + 'px)';
+                card.style.opacity = (10 - index) / 10;
+            });
+            
+            if (cards.length > 0) {
+                initHammer();
+            }
+        }
+        
+        function initHammer() {
+            let currentCard = cards[currentCardIndex];
+            
+            if (!currentCard) return;
+            
+            hammertime = new Hammer(currentCard);
+            
+            hammertime.on('pan', function(event) {
+                currentCard.style.transform = 'translate(' + event.deltaX + 'px, ' + event.deltaY + 'px) rotate(' + event.deltaX * 0.1 + 'deg)';
+                
+                if (event.deltaX > 80) {
+                    currentCard.querySelector('.overlay-stamp.like').style.opacity = event.deltaX / 200;
+                } else if (event.deltaX < -80) {
+                    currentCard.querySelector('.overlay-stamp.nope').style.opacity = -event.deltaX / 200;
+                }
+            });
+            
+            hammertime.on('panend', function(event) {
+                const moveOutWidth = document.body.clientWidth;
+                let keep = Math.abs(event.deltaX) < 80 || Math.abs(event.velocityX) < 0.5;
+                
+                if (keep) {
+                    currentCard.style.transform = '';
+                    currentCard.querySelector('.overlay-stamp.like').style.opacity = 0;
+                    currentCard.querySelector('.overlay-stamp.nope').style.opacity = 0;
+                } else {
+                    const endX = Math.max(Math.abs(event.velocityX) * moveOutWidth, moveOutWidth);
+                    const toX = event.deltaX > 0 ? endX : -endX;
+                    const endY = Math.abs(event.velocityY) * moveOutWidth;
+                    const toY = event.deltaY > 0 ? endY : -endY;
+                    const xMulti = event.deltaX * 0.03;
+                    const yMulti = event.deltaY / 80;
+                    const rotate = xMulti * yMulti;
+                    
+                    currentCard.style.transform = 'translate(' + toX + 'px, ' + (toY + event.deltaY) + 'px) rotate(' + rotate + 'deg)';
+                    
+                    // Remove card
+                    currentCard.classList.add('removed');
+                    
+                    if (event.deltaX > 0) {
+                        currentCard.classList.add('right');
+                        like();
+                    } else {
+                        currentCard.classList.add('left');
+                        dislike();
+                    }
+                    
+                    currentCardIndex--;
+                    
+                    if (currentCardIndex >= 0) {
+                        initHammer();
+                    }
+                }
+            });
+        }
+        
+        function like() {
+            if (currentCardIndex < 0) return;
+            
+            const card = cards[currentCardIndex];
+            const userId = card.getAttribute('data-user-id');
+            
+            // API call to like the user
+            fetch('/api/users/' + userId + '/swipe_right/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.is_mutual) {
+                    // It's a match!
+                    const userImg = card.querySelector('.card-img').getAttribute('src');
+                    const username = card.querySelector('h3').textContent;
+                    
+                    matchedUserImg.setAttribute('src', userImg);
+                    matchedUsername.textContent = username;
+                    startChatBtn.setAttribute('href', '/chat/room/' + data.match.id + '/');
+                    
+                    matchModal.classList.add('active');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+        
+        function dislike() {
+            if (currentCardIndex < 0) return;
+            
+            const card = cards[currentCardIndex];
+            const userId = card.getAttribute('data-user-id');
+            
+            // API call to dislike the user
+            fetch('/api/users/' + userId + '/swipe_left/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+        
+        // Event Listeners
+        if (rejectBtn) {
+            rejectBtn.addEventListener('click', function() {
+                if (currentCardIndex < 0) return;
+                
+                const card = cards[currentCardIndex];
+                card.classList.add('removed', 'left');
+                dislike();
+                
+                currentCardIndex--;
+                if (currentCardIndex >= 0) {
+                    initHammer();
+                }
+            });
+        }
+        
+        if (likeBtn) {
+            likeBtn.addEventListener('click', function() {
+                if (currentCardIndex < 0) return;
+                
+                const card = cards[currentCardIndex];
+                card.classList.add('removed', 'right');
+                like();
+                
+                currentCardIndex--;
+                if (currentCardIndex >= 0) {
+                    initHammer();
+                }
+            });
+        }
+        
+        if (keepSwipingBtn) {
+            keepSwipingBtn.addEventListener('click', function() {
+                matchModal.classList.remove('active');
+            });
+        }
+        
+        // Helper function to get CSRF token
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+        
+        // Initialize the cards
+        initCards();
+    });
+</script>
+{% endblock %}

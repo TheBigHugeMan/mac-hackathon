@@ -233,22 +233,41 @@
                     <div class="row">
                         {% for match in recent_matches %}
                         <div class="col-md-6 mb-3">
-                            {% with other_user=match.user2 if match.user1 == user else match.user1 %}
-                            <div class="card h-100">
-                                <div class="card-body d-flex align-items-center">
-                                    <img src="{{ other_user.profile_picture.url|default:'https://via.placeholder.com/50' }}" class="user-avatar me-3" alt="{{ other_user.username }}">
-                                    <div>
-                                        <h5 class="card-title mb-1">{{ other_user.username }}</h5>
-                                        <p class="card-text small text-muted">{{ other_user.program }}</p>
+                            {% if match.user1 == user %}
+                                {% with other_user=match.user2 %}
+                                <div class="card h-100">
+                                    <div class="card-body d-flex align-items-center">
+                                        <img src="{{ other_user.profile_picture.url|default:'https://via.placeholder.com/50' }}" class="user-avatar me-3" alt="{{ other_user.username }}">
+                                        <div>
+                                            <h5 class="card-title mb-1">{{ other_user.username }}</h5>
+                                            <p class="card-text small text-muted">{{ other_user.program }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer bg-white">
+                                        <div class="d-grid">
+                                            <a href="{% url 'chatroom' match.chat_room.id %}" class="btn btn-sm btn-outline-primary">Chat</a>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="card-footer bg-white">
-                                    <div class="d-grid">
-                                        <a href="{% url 'chatroom' match.chat_room.id %}" class="btn btn-sm btn-outline-primary">Chat</a>
+                                {% endwith %}
+                            {% else %}
+                                {% with other_user=match.user1 %}
+                                <div class="card h-100">
+                                    <div class="card-body d-flex align-items-center">
+                                        <img src="{{ other_user.profile_picture.url|default:'https://via.placeholder.com/50' }}" class="user-avatar me-3" alt="{{ other_user.username }}">
+                                        <div>
+                                            <h5 class="card-title mb-1">{{ other_user.username }}</h5>
+                                            <p class="card-text small text-muted">{{ other_user.program }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer bg-white">
+                                        <div class="d-grid">
+                                            <a href="{% url 'chatroom' match.chat_room.id %}" class="btn btn-sm btn-outline-primary">Chat</a>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            {% endwith %}
+                                {% endwith %}
+                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>
@@ -308,11 +327,15 @@
                             </thead>
                             <tbody>
                                 {% for top_user in top_users %}
-                                <tr class="{% if top_user == user %}table-primary{% endif %}">
+                                <tr {% if top_user == user %}class="table-primary"{% endif %}>
                                     <td>{{ forloop.counter }}</td>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <img src="{{ top_user.profile_picture.url|default:'https://via.placeholder.com/32' }}" class="user-avatar me-2" style="width: 32px; height: 32px;">
+                                            {% if top_user.profile_picture %}
+                                                <img src="{{ top_user.profile_picture.url }}" class="user-avatar me-2" style="width: 32px; height: 32px;">
+                                            {% else %}
+                                                <img src="https://via.placeholder.com/32" class="user-avatar me-2" style="width: 32px; height: 32px;">
+                                            {% endif %}
                                             <span>{{ top_user.username }}</span>
                                         </div>
                                     </td>
