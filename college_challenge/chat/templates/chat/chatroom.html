@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load math_extras %}
 
 {% block title %}Chat - {{ chat_room.name }} - College Challenge{% endblock %}
 
@@ -98,7 +99,7 @@
                         <div class="alert alert-{% if challenge.winner == user %}success{% else %}danger{% endif %}">
                             <strong>
                                 {% if challenge.winner == user %}
-                                You won +{{ challenge.tokens_bet|mul:2 }} tokens!
+                                You won +{{ challenge.tokens_bet|multiply:2 }} tokens!
                                 {% else %}
                                 {{ challenge.winner.username }} won!
                                 {% endif %}

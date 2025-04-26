@@ -300,8 +300,30 @@
 {% endblock %}
 
 {% block extra_js %}
+
+
+<!-- Make sure Hammer.js is loaded -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+
 <script>
+    function addCSRFToken() {
+    // Add a meta tag with CSRF token - this can help with CSRF issues
+    const csrf = getCookie('csrftoken');
+    if (csrf) {
+        const meta = document.createElement('meta');
+        meta.name = 'csrf-token';
+        meta.content = csrf;
+        document.head.appendChild(meta);
+        console.log('Added CSRF meta tag to document head');
+    } else {
+        console.error('No CSRF token found in cookies!');
+    }
+}
+
     document.addEventListener('DOMContentLoaded', function() {
+        // Debug info
+        console.log("Match view loaded");
+        
         // Elements
         const cardDeck = document.getElementById('card-deck');
         const rejectBtn = document.getElementById('reject-btn');
@@ -313,6 +335,8 @@
         const keepSwipingBtn = document.getElementById('keep-swiping-btn');
         
         let cards = document.querySelectorAll('.tinder-card');
+        console.log("Found cards:", cards.length);
+        
         let currentCardIndex = cards.length - 1;
         let hammertime;
         
@@ -322,98 +346,166 @@
                 card.style.zIndex = cards.length - index;
                 card.style.transform = 'scale(' + (20 - index) / 20 + ') translateY(-' + index * 10 + 'px)';
                 card.style.opacity = (10 - index) / 10;
+                
+                // Log the user ID for each card
+                console.log("Card", index, "user ID:", card.getAttribute('data-user-id'));
             });
             
             if (cards.length > 0) {
                 initHammer();
+            } else {
+                console.log("No cards found to initialize");
             }
         }
         
+        // Hammer.js initialization for swipe
         function initHammer() {
             let currentCard = cards[currentCardIndex];
             
             if (!currentCard) return;
             
-            hammertime = new Hammer(currentCard);
-            
-            hammertime.on('pan', function(event) {
-                currentCard.style.transform = 'translate(' + event.deltaX + 'px, ' + event.deltaY + 'px) rotate(' + event.deltaX * 0.1 + 'deg)';
+            try {
+                hammertime = new Hammer(currentCard);
                 
-                if (event.deltaX > 80) {
-                    currentCard.querySelector('.overlay-stamp.like').style.opacity = event.deltaX / 200;
-                } else if (event.deltaX < -80) {
-                    currentCard.querySelector('.overlay-stamp.nope').style.opacity = -event.deltaX / 200;
-                }
-            });
-            
-            hammertime.on('panend', function(event) {
-                const moveOutWidth = document.body.clientWidth;
-                let keep = Math.abs(event.deltaX) < 80 || Math.abs(event.velocityX) < 0.5;
+                hammertime.on('pan', function(event) {
+                    currentCard.style.transform = `translate(${event.deltaX}px, ${event.deltaY}px) rotate(${event.deltaX * 0.1}deg)`;
+                    
+                    if (event.deltaX > 80) {
+                        currentCard.querySelector('.overlay-stamp.like').style.opacity = event.deltaX / 200;
+                    } else if (event.deltaX < -80) {
+                        currentCard.querySelector('.overlay-stamp.nope').style.opacity = -event.deltaX / 200;
+                    }
+                });
                 
-                if (keep) {
-                    currentCard.style.transform = '';
-                    currentCard.querySelector('.overlay-stamp.like').style.opacity = 0;
-                    currentCard.querySelector('.overlay-stamp.nope').style.opacity = 0;
-                } else {
-                    const endX = Math.max(Math.abs(event.velocityX) * moveOutWidth, moveOutWidth);
-                    const toX = event.deltaX > 0 ? endX : -endX;
-                    const endY = Math.abs(event.velocityY) * moveOutWidth;
-                    const toY = event.deltaY > 0 ? endY : -endY;
-                    const xMulti = event.deltaX * 0.03;
-                    const yMulti = event.deltaY / 80;
-                    const rotate = xMulti * yMulti;
+                hammertime.on('panend', function(event) {
+                    const moveOutWidth = document.body.clientWidth;
+                    let keep = Math.abs(event.deltaX) < 80 || Math.abs(event.velocityX) < 0.5;
                     
-                    currentCard.style.transform = 'translate(' + toX + 'px, ' + (toY + event.deltaY) + 'px) rotate(' + rotate + 'deg)';
-                    
-                    // Remove card
-                    currentCard.classList.add('removed');
-                    
-                    if (event.deltaX > 0) {
-                        currentCard.classList.add('right');
-                        like();
+                    if (keep) {
+                        currentCard.style.transform = '';
+                        currentCard.querySelector('.overlay-stamp.like').style.opacity = 0;
+                        currentCard.querySelector('.overlay-stamp.nope').style.opacity = 0;
                     } else {
-                        currentCard.classList.add('left');
-                        dislike();
+                        const endX = Math.max(Math.abs(event.velocityX) * moveOutWidth, moveOutWidth);
+                        const toX = event.deltaX > 0 ? endX : -endX;
+                        const endY = Math.abs(event.velocityY) * moveOutWidth;
+                        const toY = event.deltaY > 0 ? endY : -endY;
+                        const xMulti = event.deltaX * 0.03;
+                        const yMulti = event.deltaY / 80;
+                        const rotate = xMulti * yMulti;
+                        
+                        currentCard.style.transform = `translate(${toX}px, ${(toY + event.deltaY)}px) rotate(${rotate}deg)`;
+                        
+                        // Remove card
+                        currentCard.classList.add('removed');
+                        
+                        if (event.deltaX > 0) {
+                            currentCard.classList.add('right');
+                            like();
+                        } else {
+                            currentCard.classList.add('left');
+                            dislike();
+                        }
+                        
+                        currentCardIndex--;
+                        
+                        if (currentCardIndex >= 0) {
+                            initHammer();
+                        }
                     }
-                    
-                    currentCardIndex--;
-                    
-                    if (currentCardIndex >= 0) {
-                        initHammer();
-                    }
-                }
-            });
+                });
+            } catch (error) {
+                console.error('Error initializing Hammer.js:', error);
+            }
         }
         
         function like() {
-            if (currentCardIndex < 0) return;
+            if (currentCardIndex < 0) {
+                console.log("No cards left to like");
+                return;
+            }
             
             const card = cards[currentCardIndex];
             const userId = card.getAttribute('data-user-id');
             
-            // API call to like the user
-            fetch('/api/users/' + userId + '/swipe_right/', {
+            console.log("Swiping right on user ID:", userId);
+            
+            // Get CSRF token
+            const csrftoken = getCookie('csrftoken');
+            console.log("CSRF Token found:", !!csrftoken);
+            
+            // Log the full URL and request details
+            const apiUrl = `/api/users/${userId}/swipe_right/`;
+            console.log("Making POST request to:", apiUrl);
+            console.log("With headers:", {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken ? csrftoken.substring(0, 5) + '...' : 'null'
+            });
+            
+            // API call to like the user with better error handling
+            fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({})
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log("Response status:", response.status);
+                console.log("Response OK:", response.ok);
+                
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        try {
+                            // Try to parse as JSON
+                            const errorData = JSON.parse(text);
+                            console.error("Server error response:", errorData);
+                            throw new Error(`Server error: ${JSON.stringify(errorData)}`);
+                        } catch (e) {
+                            // If not JSON, use text
+                            console.error("Server error text:", text);
+                            throw new Error(`Network error: ${response.status} - ${text || response.statusText}`);
+                        }
+                    });
+                }
+                
+                return response.json();
+            })
             .then(data => {
+                console.log("Swipe response data:", data);
+                
                 if (data.is_mutual) {
                     // It's a match!
+                    console.log("Match found!");
                     const userImg = card.querySelector('.card-img').getAttribute('src');
                     const username = card.querySelector('h3').textContent;
                     
                     matchedUserImg.setAttribute('src', userImg);
                     matchedUsername.textContent = username;
-                    startChatBtn.setAttribute('href', '/chat/room/' + data.match.id + '/');
+                    
+                    // Set the chat room URL
+                    if (data.chat_room_id) {
+                        const chatUrl = `/chat/room/${data.chat_room_id}/`;
+                        console.log("Setting chat URL to:", chatUrl);
+                        startChatBtn.setAttribute('href', chatUrl);
+                    } else if (data.match && data.match.id) {
+                        const chatUrl = `/chat/room/${data.match.id}/`;
+                        console.log("Setting chat URL to:", chatUrl);
+                        startChatBtn.setAttribute('href', chatUrl);
+                    } else {
+                        console.warn("No chat room ID in response:", data);
+                    }
                     
                     matchModal.classList.add('active');
+                } else {
+                    console.log("Pending match created - not mutual yet");
                 }
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => {
+                console.error('Error during swipe right:', error);
+                alert('There was an error with the match. Please try again. Error: ' + error.message);
+            });
         }
         
         function dislike() {
@@ -422,20 +514,27 @@
             const card = cards[currentCardIndex];
             const userId = card.getAttribute('data-user-id');
             
+            console.log("Swiping left on user ID:", userId);
+            
+            // Get CSRF token
+            const csrftoken = getCookie('csrftoken');
+            
             // API call to dislike the user
-            fetch('/api/users/' + userId + '/swipe_left/', {
+            fetch(`/api/users/${userId}/swipe_left/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({})
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => console.error('Error during swipe left:', error));
         }
         
         // Event Listeners
         if (rejectBtn) {
             rejectBtn.addEventListener('click', function() {
+                console.log("Reject button clicked");
                 if (currentCardIndex < 0) return;
                 
                 const card = cards[currentCardIndex];
@@ -451,13 +550,28 @@
         
         if (likeBtn) {
             likeBtn.addEventListener('click', function() {
-                if (currentCardIndex < 0) return;
+                console.log("Like button clicked");
+                if (currentCardIndex < 0) {
+                    console.log("No more cards to like");
+                    return;
+                }
                 
                 const card = cards[currentCardIndex];
+                console.log("Current card:", card);
+                const userId = card.getAttribute('data-user-id');
+                console.log("User ID from card:", userId);
+                
+                if (!userId) {
+                    console.error("No user ID found on card!");
+                    alert("Error: No user ID found on this card. Please refresh the page.");
+                    return;
+                }
+                
                 card.classList.add('removed', 'right');
                 like();
                 
                 currentCardIndex--;
+                console.log("Cards remaining:", currentCardIndex + 1);
                 if (currentCardIndex >= 0) {
                     initHammer();
                 }
@@ -470,13 +584,22 @@
             });
         }
         
-        // Helper function to get CSRF token
+        // Improved getCookie function
         function getCookie(name) {
-            const value = `; ${document.cookie}`;
-            const parts = value.split(`; ${name}=`);
-            if (parts.length === 2) return parts.pop().split(';').shift();
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
         }
-        
         // Initialize the cards
         initCards();
     });

@@ -4,6 +4,7 @@ from users.models import Match, GamePreference
 from chat.models import ChatRoom, Message
 import random
 from django.utils import timezone
+from django.db import models
 
 User = get_user_model()
 

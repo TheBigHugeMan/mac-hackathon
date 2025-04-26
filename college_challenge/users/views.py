@@ -1,18 +1,21 @@
 # users/views.py
+from django.shortcuts import get_object_or_404
+
 from django.db.models import Q
 from rest_framework import viewsets, status, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404, render, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db import models
+
 from .models import User, Match
 from .serializers import (
     UserProfileSerializer, UserCardSerializer, 
     MatchSerializer, CreateMatchSerializer
 )
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.db import models
 from .forms import UserRegisterForm, UserProfileForm
 from chat.models import ChatRoom
 
@@ -104,7 +107,7 @@ def match_view(request):
     
     # Get users that haven't been matched yet
     existing_matches = Match.objects.filter(
-        Q(user1=user) | Q(user2=user)
+        models.Q(user1=user) | models.Q(user2=user)
     )
     excluded_users = set()
     for match in existing_matches:
@@ -113,10 +116,14 @@ def match_view(request):
         else:
             excluded_users.add(match.user1.id)
     
-    # Get potential matches based on rating similarity
+    # Get potential matches - use more flexible query
     potential_matches = User.objects.exclude(
         id__in=list(excluded_users) + [user.id]
-    ).order_by('?')[:5]  # Random 5 users
+    ).order_by('?')[:10]  # Increased from 5 to 10
+    
+    # Debugging: If no matches are found, just get some users excluding current user
+    if not potential_matches:
+        potential_matches = User.objects.exclude(id=user.id).order_by('?')[:10]
     
     context = {
         'potential_matches': potential_matches
@@ -168,41 +175,52 @@ class UserViewSet(mixins.RetrieveModelMixin,
     @action(detail=True, methods=['post'])
     def swipe_right(self, request, pk=None):
         """Swipe right on a user to match with them"""
-        user = request.user
-        target_user = self.get_object()
-        
-        # Check if the other user has already swiped right on this user
-        existing_match = Match.objects.filter(
-            user1=target_user,
-            user2=user,
-            status='PENDING'
-        ).first()
-        
-        if existing_match:
-            # It's a match!
-            existing_match.status = 'ACCEPTED'
-            existing_match.save()
+        try:
+            user = request.user
+            target_user = get_object_or_404(User, pk=pk)
             
-            # Create chat room
-            ChatRoom.objects.create(match=existing_match)
+            # Debug log
+            print(f"User {user.username} swiping right on {target_user.username}")
             
-            serializer = MatchSerializer(existing_match)
-            return Response({
-                'match': serializer.data,
-                'is_mutual': True
-            }, status=status.HTTP_201_CREATED)
-        else:
-            # Create new pending match
-            match = Match.objects.create(
-                user1=user,
-                user2=target_user,
+            # Check if the other user has already swiped right on this user
+            existing_match = Match.objects.filter(
+                user1=target_user,
+                user2=user,
                 status='PENDING'
-            )
-            serializer = MatchSerializer(match)
+            ).first()
+            
+            if existing_match:
+                # It's a match!
+                existing_match.status = 'ACCEPTED'
+                existing_match.save()
+                
+                # Create chat room
+                chat_room = ChatRoom.objects.create(match=existing_match)
+                
+                serializer = MatchSerializer(existing_match)
+                return Response({
+                    'match': serializer.data,
+                    'is_mutual': True,
+                    'chat_room_id': chat_room.id  # Add chat room ID for redirect
+                }, status=status.HTTP_201_CREATED)
+            else:
+                # Create new pending match
+                match = Match.objects.create(
+                    user1=user,
+                    user2=target_user,
+                    status='PENDING'
+                )
+                serializer = MatchSerializer(match)
+                return Response({
+                    'match': serializer.data,
+                    'is_mutual': False
+                }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            print(f"Error in swipe_right: {str(e)}")
             return Response({
-                'match': serializer.data,
-                'is_mutual': False
-            }, status=status.HTTP_201_CREATED)
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     
     @action(detail=True, methods=['post'])
     def swipe_left(self, request, pk=None):
