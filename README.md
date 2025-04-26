@@ -1,6 +1,6 @@
-# College Challenge
+# Monash Royale
 
-College Challenge is a social gaming platform that allows students to connect, compete, and challenge each other to simple games like Coin Flip and Dice Roll. The app features a Tinder-style matching system, in-app chat, and a virtual token economy.
+Monash Royale is a social gaming platform that allows students to connect, compete, and challenge each other to simple games like Coin Flip and Dice Roll. The app features a Tinder-style matching system, in-app chat, and a virtual token economy.
 
 ## Features
 
