@@ -1,0 +1,341 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Challenge Details - College Challenge{% endblock %}
+
+{% block extra_css %}
+<style>
+    .coin-animation {
+        width: 150px;
+        height: 150px;
+        position: relative;
+        margin: 0 auto;
+    }
+    
+    .coin {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        transform-style: preserve-3d;
+        transition: transform 3s ease-in-out;
+    }
+    
+    .coin-heads, .coin-tails {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        position: absolute;
+        backface-visibility: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4rem;
+    }
+    
+    .coin-heads {
+        background: linear-gradient(45deg, #f9d342, #ffd700);
+        transform: rotateY(0deg);
+    }
+    
+    .coin-tails {
+        background: linear-gradient(45deg, #e0e0e0, #c0c0c0);
+        transform: rotateY(180deg);
+    }
+    
+    .dice {
+        width: 100px;
+        height: 100px;
+        background: white;
+        border-radius: 10px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+    
+    .dice-roll-animation {
+        animation: diceRoll 1s ease-in-out;
+    }
+    
+    @keyframes diceRoll {
+        0% { transform: rotate(0deg); }
+        20% { transform: rotate(72deg); }
+        40% { transform: rotate(144deg); }
+        60% { transform: rotate(216deg); }
+        80% { transform: rotate(288deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{{ challenge.get_game_type_display }} Challenge</h4>
+                    <span class="badge bg-light text-dark">{{ challenge.get_status_display }}</span>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Players -->
+                    <div class="row mb-4">
+                        <div class="col-5 text-center">
+                            <img src="{{ challenge.challenger.profile_picture.url|default:'https://via.placeholder.com/80' }}" 
+                                 class="rounded-circle" style="width: 80px; height: 80px; object-fit: cover;">
+                            <h5 class="mt-2">{{ challenge.challenger.username }}</h5>
+                            <div>
+                                <span class="badge bg-secondary">Challenger</span>
+                                {% if challenge.winner == challenge.challenger %}
+                                <span class="badge bg-success">Winner</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-2 d-flex align-items-center justify-content-center">
+                            <div class="fs-3">VS</div>
+                        </div>
+                        <div class="col-5 text-center">
+                            <img src="{{ challenge.opponent.profile_picture.url|default:'https://via.placeholder.com/80' }}" 
+                                 class="rounded-circle" style="width: 80px; height: 80px; object-fit: cover;">
+                            <h5 class="mt-2">{{ challenge.opponent.username }}</h5>
+                            <div>
+                                <span class="badge bg-secondary">Opponent</span>
+                                {% if challenge.winner == challenge.opponent %}
+                                <span class="badge bg-success">Winner</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Challenge Details -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Game Type:</span>
+                                    <strong>{{ challenge.get_game_type_display }}</strong>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Tokens Wagered:</span>
+                                    <strong>{{ challenge.wager }} per player</strong>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Created:</span>
+                                    <strong>{{ challenge.created_at|date:"M d, Y H:i" }}</strong>
+                                </li>
+                                {% if challenge.completed_at %}
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Completed:</span>
+                                    <strong>{{ challenge.completed_at|date:"M d, Y H:i" }}</strong>
+                                </li>
+                                {% endif %}
+                                {% if challenge.status == 'COMPLETED' %}
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Winner:</span>
+                                    <strong>{{ challenge.winner.username }} (+{{ challenge.wager|multiply:2 }} tokens)</strong>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Game-Specific Details -->
+                    {% if challenge.game_type == 'COIN_FLIP' and challenge.coin_flip %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Coin Flip Details</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <p class="mb-3">{{ challenge.challenger.username }} called <strong>{{ challenge.coin_flip.get_challenger_choice_display }}</strong></p>
+                            
+                            {% if challenge.status == 'COMPLETED' and challenge.coin_flip.result %}
+                            <div class="coin-animation">
+                                <div class="coin" id="coin">
+                                    <div class="coin-heads">👑</div>
+                                    <div class="coin-tails">✨</div>
+                                </div>
+                            </div>
+                            <p class="mt-3">Result: <strong>{{ challenge.coin_flip.get_result_display }}</strong></p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% elif challenge.game_type == 'DICE_ROLL' and challenge.dice_roll %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Dice Roll Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-md-6 mb-3">
+                                    <h6>{{ challenge.challenger.username }}</h6>
+                                    {% if challenge.dice_roll.challenger_guess %}
+                                    <p>Guessed: <strong>{{ challenge.dice_roll.challenger_guess }}</strong></p>
+                                    {% endif %}
+                                    
+                                    {% if challenge.status == 'COMPLETED' and challenge.dice_roll.challenger_roll %}
+                                    <div class="dice" id="challenger-dice">{{ challenge.dice_roll.challenger_roll }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <h6>{{ challenge.opponent.username }}</h6>
+                                    {% if challenge.dice_roll.opponent_guess %}
+                                    <p>Guessed: <strong>{{ challenge.dice_roll.opponent_guess }}</strong></p>
+                                    {% endif %}
+                                    
+                                    {% if challenge.status == 'COMPLETED' and challenge.dice_roll.opponent_roll %}
+                                    <div class="dice" id="opponent-dice">{{ challenge.dice_roll.opponent_roll }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2">
+                        {% if challenge.status == 'PENDING' and challenge.opponent == user %}
+                        <button class="btn btn-success" id="accept-btn">Accept Challenge</button>
+                        <button class="btn btn-danger" id="reject-btn">Reject Challenge</button>
+                        {% elif challenge.status == 'ACCEPTED' %}
+                        <button class="btn btn-primary" id="execute-btn">Start Challenge</button>
+                        {% endif %}
+                        
+                        <a href="{% url 'chatroom' challenge.match.chat_room.id %}" class="btn btn-secondary">Back to Chat</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up event listeners for buttons
+        const acceptBtn = document.getElementById('accept-btn');
+        if (acceptBtn) {
+            acceptBtn.addEventListener('click', function() {
+                acceptChallenge();
+            });
+        }
+        
+        const rejectBtn = document.getElementById('reject-btn');
+        if (rejectBtn) {
+            rejectBtn.addEventListener('click', function() {
+                if (confirm('Are you sure you want to reject this challenge?')) {
+                    rejectChallenge();
+                }
+            });
+        }
+        
+        const executeBtn = document.getElementById('execute-btn');
+        if (executeBtn) {
+            executeBtn.addEventListener('click', function() {
+                executeChallenge();
+            });
+        }
+        
+        // Coin flip animation
+        const coin = document.getElementById('coin');
+        if (coin && '{{ challenge.status }}' === 'COMPLETED' && '{{ challenge.coin_flip.result }}') {
+            setTimeout(function() {
+                if ('{{ challenge.coin_flip.result }}' === 'HEADS') {
+                    coin.style.transform = 'rotateY(0deg)';
+                } else {
+                    coin.style.transform = 'rotateY(180deg)';
+                }
+            }, 500);
+        }
+        
+        // Dice roll animation
+        const challengerDice = document.getElementById('challenger-dice');
+        const opponentDice = document.getElementById('opponent-dice');
+        
+        if (challengerDice && opponentDice && '{{ challenge.status }}' === 'COMPLETED') {
+            setTimeout(function() {
+                challengerDice.classList.add('dice-roll-animation');
+                opponentDice.classList.add('dice-roll-animation');
+            }, 500);
+        }
+        
+        // API functions
+        function acceptChallenge() {
+            fetch('/api/challenges/{{ challenge.id }}/accept_challenge/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to accept challenge');
+            });
+        }
+        
+        function rejectChallenge() {
+            fetch('/api/challenges/{{ challenge.id }}/reject_challenge/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    window.location.href = '{% url "challenges" %}';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to reject challenge');
+            });
+        }
+        
+        function executeChallenge() {
+            fetch('/api/challenges/{{ challenge.id }}/execute_challenge/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to execute challenge');
+            });
+        }
+        
+        // Helper function to get CSRF token
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+    });
+</script>
+{% endblock %}

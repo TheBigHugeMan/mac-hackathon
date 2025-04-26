@@ -74,13 +74,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             room = ChatRoom.objects.get(id=self.room_id)
             messages = Message.objects.filter(
-                room=room
+                chat_room=room
             ).order_by('timestamp')[:50]  # Last 50 messages
             
             return [
                 {
                     'message': msg.content,
-                    'username': msg.sender.username,
+                    'username': msg.sender.username if msg.sender else "System",
                     'timestamp': msg.timestamp.isoformat(),
                     'message_id': msg.id
                 }
@@ -96,7 +96,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         
         msg = Message.objects.create(
             sender=user,
-            room=room,
+            chat_room=room,
             content=content
         )
         

@@ -7,8 +7,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import ChatRoom, Message
 from .serializers import ChatRoomSerializer, MessageSerializer
-from users.models import Match
+from users.models import Match, User
 from challenges.models import Challenge
+from django.db import models
 from django.contrib.auth.decorators import login_required
 
 class ChatRoomViewSet(viewsets.ReadOnlyModelViewSet):
@@ -147,7 +148,7 @@ class ChatRoomViewSet(viewsets.ReadOnlyModelViewSet):
         )
 
 @login_required
-def chat_room_view(request, room_id):
+def chatroom(request, room_id):
     chat_room = get_object_or_404(ChatRoom, id=room_id)
     
     # Ensure the user is a participant in this chat room
@@ -164,20 +165,21 @@ def chat_room_view(request, room_id):
     # Find any challenges related to this match
     challenges = Challenge.objects.filter(match=match).order_by('-created_at')
     
+    # Get the most recent active challenge if one exists
+    active_challenge = challenges.filter(status__in=['PENDING', 'ACCEPTED']).first()
+    
     context = {
         'chat_room': chat_room,
         'other_user': other_user,
         'messages': messages,
-        'challenges': challenges
+        'challenges': challenges,
+        'challenge': active_challenge  # For the template
     }
     
-    return render(request, 'chat/chat_room.html', context)
-
-# chat/views.py (additional functions)
-
+    return render(request, 'chat/chatroom.html', context)
 
 @login_required
-def chat_room_list_view(request):
+def chat_room_list(request):
     user = request.user
     
     # Get matches where user is a participant
@@ -207,4 +209,4 @@ def chat_room_list_view(request):
         'chat_rooms': chat_rooms,
     }
     
-    return render(request, 'chat/chat_room_list.html', context)
+    return render(request, 'chat/chat_list.html', context)

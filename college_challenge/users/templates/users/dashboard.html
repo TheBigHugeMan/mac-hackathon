@@ -1,0 +1,335 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - College Challenge{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        background-color: #4e73df;
+        background-image: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0.5rem;
+    }
+    
+    .stat-card {
+        border-left: 0.25rem solid;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card.tokens {
+        border-left-color: #f6c23e;
+    }
+    
+    .stat-card.wins {
+        border-left-color: #1cc88a;
+    }
+    
+    .stat-card.rating {
+        border-left-color: #36b9cc;
+    }
+    
+    .stat-card.streak {
+        border-left-color: #e74a3b;
+    }
+    
+    .stat-card .stat-icon {
+        position: absolute;
+        top: 1.5rem;
+        right: 1.5rem;
+        color: rgba(0, 0, 0, 0.1);
+        font-size: 2.5rem;
+    }
+    
+    .stat-card .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+    }
+    
+    .stat-card .stat-label {
+        text-transform: uppercase;
+        letter-spacing: 0.05rem;
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    
+    .action-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        height: 100%;
+    }
+    
+    .action-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+    
+    .action-card .card-img-top {
+        height: 160px;
+        object-fit: cover;
+    }
+    
+    .leaderboard-table td {
+        vertical-align: middle;
+    }
+    
+    .user-avatar {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    
+    .challenge-card {
+        transition: transform 0.3s ease;
+        margin-bottom: 1rem;
+    }
+    
+    .challenge-card:hover {
+        transform: translateY(-3px);
+    }
+    
+    .challenge-user {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Welcome Header -->
+<div class="dashboard-header mb-4">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="display-4">Welcome, {{ user.username }}!</h1>
+                <p class="lead">Ready to challenge your fellow students?</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{% url 'match' %}" class="btn btn-light btn-lg">Find Matches</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Stats Row -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card tokens bg-white">
+                <div class="stat-icon">
+                    <i class="bi bi-coin"></i>
+                </div>
+                <div class="stat-value text-warning">{{ user.token_balance }}</div>
+                <div class="stat-label">Tokens Available</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card wins bg-white">
+                <div class="stat-icon">
+                    <i class="bi bi-trophy"></i>
+                </div>
+                <div class="stat-value text-success">{{ user.win_count }}</div>
+                <div class="stat-label">Total Wins</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card rating bg-white">
+                <div class="stat-icon">
+                    <i class="bi bi-graph-up"></i>
+                </div>
+                <div class="stat-value text-info">{{ user.rating|floatformat:0 }}</div>
+                <div class="stat-label">Current Rating</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card streak bg-white">
+                <div class="stat-icon">
+                    <i class="bi bi-lightning-charge"></i>
+                </div>
+                <div class="stat-value text-danger">{{ user.current_streak }}</div>
+                <div class="stat-label">Win Streak</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content Row -->
+    <div class="row">
+        <!-- Left Column - Recent Challenges -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Challenges</h5>
+                    <a href="{% url 'challenges' %}" class="btn btn-sm btn-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_challenges %}
+                    <div class="list-group">
+                        {% for challenge in recent_challenges %}
+                        <div class="challenge-card list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ challenge.challenger.profile_picture.url|default:'https://via.placeholder.com/32' }}" class="challenge-user me-2" alt="{{ challenge.challenger.username }}">
+                                    <div class="mx-2">vs</div>
+                                    <img src="{{ challenge.opponent.profile_picture.url|default:'https://via.placeholder.com/32' }}" class="challenge-user me-3" alt="{{ challenge.opponent.username }}">
+                                    <div>
+                                        <h6 class="mb-0">{{ challenge.get_game_type_display }}</h6>
+                                        <small class="text-muted">
+                                            {{ challenge.wager }} tokens
+                                            • {{ challenge.created_at|date:"M d, H:i" }}
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge {% if challenge.status == 'PENDING' %}bg-warning{% elif challenge.status == 'ACCEPTED' %}bg-primary{% elif challenge.status == 'COMPLETED' %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {{ challenge.get_status_display }}
+                                    </span>
+                                    
+                                    {% if challenge.status == 'COMPLETED' and challenge.winner %}
+                                    <div>
+                                        <small class="{% if challenge.winner == user %}text-success{% else %}text-danger{% endif %}">
+                                            {% if challenge.winner == user %}
+                                                You won
+                                            {% else %}
+                                                {{ challenge.winner.username }} won
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <img src="{% static 'img/empty-challenges.svg' %}" alt="No challenges" class="img-fluid mb-3" style="max-height: 150px;">
+                        <h5>No challenges yet</h5>
+                        <p class="text-muted">Start matching with other students to create challenges!</p>
+                        <a href="{% url 'match' %}" class="btn btn-primary">Find Matches</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Recent Matches -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Your Matches</h5>
+                    <a href="{% url 'chat_room_list' %}" class="btn btn-sm btn-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_matches %}
+                    <div class="row">
+                        {% for match in recent_matches %}
+                        <div class="col-md-6 mb-3">
+                            {% with other_user=match.user2 if match.user1 == user else match.user1 %}
+                            <div class="card h-100">
+                                <div class="card-body d-flex align-items-center">
+                                    <img src="{{ other_user.profile_picture.url|default:'https://via.placeholder.com/50' }}" class="user-avatar me-3" alt="{{ other_user.username }}">
+                                    <div>
+                                        <h5 class="card-title mb-1">{{ other_user.username }}</h5>
+                                        <p class="card-text small text-muted">{{ other_user.program }}</p>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-white">
+                                    <div class="d-grid">
+                                        <a href="{% url 'chatroom' match.chat_room.id %}" class="btn btn-sm btn-outline-primary">Chat</a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endwith %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <img src="{% static 'img/empty-matches.svg' %}" alt="No matches" class="img-fluid mb-3" style="max-height: 150px;">
+                        <h5>No matches yet</h5>
+                        <p class="text-muted">Find and match with other students to get started!</p>
+                        <a href="{% url 'match' %}" class="btn btn-primary">Find Matches</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column - Leaderboard & Actions -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="row mb-4">
+                <div class="col-6">
+                    <div class="card action-card h-100">
+                        <img src="{% static 'img/find-matches.jpg' %}" class="card-img-top" alt="Find Matches">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Find Matches</h5>
+                            <p class="card-text small">Match with other students</p>
+                            <a href="{% url 'match' %}" class="btn btn-primary stretched-link">Let's Go</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card action-card h-100">
+                        <img src="{% static 'img/chat.jpg' %}" class="card-img-top" alt="Chat">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">My Chats</h5>
+                            <p class="card-text small">Chat with your matches</p>
+                            <a href="{% url 'chat_room_list' %}" class="btn btn-primary stretched-link">View Chats</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Leaderboard -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Top Players</h5>
+                </div>
+                <div class="card-body">
+                    {% if top_users %}
+                    <div class="table-responsive">
+                        <table class="table table-hover leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Player</th>
+                                    <th>Rating</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for top_user in top_users %}
+                                <tr class="{% if top_user == user %}table-primary{% endif %}">
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ top_user.profile_picture.url|default:'https://via.placeholder.com/32' }}" class="user-avatar me-2" style="width: 32px; height: 32px;">
+                                            <span>{{ top_user.username }}</span>
+                                        </div>
+                                    </td>
+                                    <td>{{ top_user.rating|floatformat:0 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted">No players on the leaderboard yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

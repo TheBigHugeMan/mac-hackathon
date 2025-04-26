@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Challenges - College Challenge{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">My Challenges</h1>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">Pending Challenges</h5>
+                </div>
+                <div class="card-body">
+                    {% if pending_challenges %}
+                        <div class="list-group">
+                            {% for challenge in pending_challenges %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">{{ challenge.get_game_type_display }}</h6>
+                                            <small>
+                                                {% if challenge.challenger == user %}
+                                                    You challenged <strong>{{ challenge.opponent.username }}</strong>
+                                                {% else %}
+                                                    <strong>{{ challenge.challenger.username }}</strong> challenged you
+                                                {% endif %}
+                                            </small>
+                                            <p class="mb-1 mt-2">
+                                                <span class="badge bg-info">{{ challenge.wager }} tokens</span>
+                                                <span class="badge bg-secondary">{{ challenge.created_at|date:"M d, H:i" }}</span>
+                                            </p>
+                                        </div>
+                                        <div>
+                                            {% if challenge.challenger != user %}
+                                                <button class="btn btn-sm btn-success accept-challenge" data-challenge-id="{{ challenge.id }}">Accept</button>
+                                                <button class="btn btn-sm btn-danger reject-challenge" data-challenge-id="{{ challenge.id }}">Reject</button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No pending challenges.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Active Challenges</h5>
+                </div>
+                <div class="card-body">
+                    {% if active_challenges %}
+                        <div class="list-group">
+                            {% for challenge in active_challenges %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">{{ challenge.get_game_type_display }}</h6>
+                                            <p class="mb-1">
+                                                <strong>{{ challenge.challenger.username }}</strong> vs 
+                                                <strong>{{ challenge.opponent.username }}</strong>
+                                            </p>
+                                            <p class="mb-1">
+                                                <span class="badge bg-warning">{{ challenge.wager }} tokens each</span>
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <a href="{% url 'challenge_detail' challenge.id %}" class="btn btn-sm btn-primary">View</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No active challenges.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Completed Challenges</h5>
+                </div>
+                <div class="card-body">
+                    {% if completed_challenges %}
+                        <div class="list-group">
+                            {% for challenge in completed_challenges %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">{{ challenge.get_game_type_display }}</h6>
+                                            <p class="mb-1">
+                                                <strong>{{ challenge.challenger.username }}</strong> vs 
+                                                <strong>{{ challenge.opponent.username }}</strong>
+                                            </p>
+                                            <p class="mb-1">
+                                                {% if challenge.status == 'COMPLETED' %}
+                                                    <span class="badge {% if challenge.winner == user %}bg-success{% else %}bg-danger{% endif %}">
+                                                        {% if challenge.winner == user %}
+                                                            You Won +{{ challenge.wager|multiply:2 }} tokens
+                                                        {% else %}
+                                                            {{ challenge.winner.username }} Won
+                                                        {% endif %}
+                                                    </span>
+                                                {% elif challenge.status == 'REJECTED' %}
+                                                    <span class="badge bg-secondary">Rejected</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ challenge.get_status_display }}</span>
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <a href="{% url 'challenge_detail' challenge.id %}" class="btn btn-sm btn-secondary">Details</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No completed challenges.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Accept challenge buttons
+        document.querySelectorAll('.accept-challenge').forEach(button => {
+            button.addEventListener('click', function() {
+                const challengeId = this.getAttribute('data-challenge-id');
+                
+                fetch(`/api/challenges/${challengeId}/accept_challenge/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        window.location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to accept challenge');
+                });
+            });
+        });
+        
+        // Reject challenge buttons
+        document.querySelectorAll('.reject-challenge').forEach(button => {
+            button.addEventListener('click', function() {
+                const challengeId = this.getAttribute('data-challenge-id');
+                
+                if (confirm('Are you sure you want to reject this challenge?')) {
+                    fetch(`/api/challenges/${challengeId}/reject_challenge/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert(data.error);
+                        } else {
+                            window.location.reload();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Failed to reject challenge');
+                    });
+                }
+            });
+        });
+        
+        // Helper function to get CSRF token
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+    });
+</script>
+{% endblock %}

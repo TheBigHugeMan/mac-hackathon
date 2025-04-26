@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Chats - College Challenge{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-card {
+        transition: transform 0.3s ease;
+    }
+    
+    .chat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    
+    .chat-preview {
+        height: 3rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .user-avatar {
+        width: 48px;
+        height: 48px;
+        object-fit: cover;
+    }
+    
+    .badge-online {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 12px;
+        height: 12px;
+        background-color: #28a745;
+        border-radius: 50%;
+        border: 2px solid white;
+    }
+    
+    .badge-offline {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 12px;
+        height: 12px;
+        background-color: #6c757d;
+        border-radius: 50%;
+        border: 2px solid white;
+    }
+    
+    .timestamp {
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4 align-items-center">
+        <div class="col">
+            <h1>My Chats</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'match' %}" class="btn btn-primary">Find New Matches</a>
+        </div>
+    </div>
+    
+    <div class="row">
+        {% if chat_rooms %}
+            {% for chat in chat_rooms %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <a href="{% url 'chatroom' chat.room.id %}" class="text-decoration-none text-dark">
+                    <div class="card chat-card h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="position-relative me-3">
+                                    <img src="{{ chat.other_user.profile_picture.url|default:'https://via.placeholder.com/48' }}" 
+                                         class="rounded-circle user-avatar">
+                                    <span class="badge-offline"></span>
+                                </div>
+                                <div>
+                                    <h5 class="mb-0">{{ chat.other_user.username }}</h5>
+                                    <div class="text-muted small">
+                                        {{ chat.other_user.program }}{% if chat.other_user.major %}, {{ chat.other_user.major }}{% endif %}
+                                    </div>
+                                </div>
+                                {% if chat.latest_message %}
+                                <div class="ms-auto">
+                                    <span class="timestamp">{{ chat.latest_message.timestamp|date:"M d, H:i" }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="chat-preview text-muted">
+                                {% if chat.latest_message %}
+                                    <span class="fw-bold">
+                                        {% if chat.latest_message.sender == user %}
+                                            You:
+                                        {% elif chat.latest_message.is_bot %}
+                                            Chatbot:
+                                        {% else %}
+                                            {{ chat.latest_message.sender.username }}:
+                                        {% endif %}
+                                    </span> 
+                                    {{ chat.latest_message.content }}
+                                {% else %}
+                                    No messages yet. Start a conversation!
+                                {% endif %}
+                            </div>
+                            
+                            {% if chat.active_challenge %}
+                            <div class="mt-2">
+                                <span class="badge bg-warning text-dark">Active Challenge</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col">
+                <div class="alert alert-info">
+                    <h4 class="alert-heading">No chats yet!</h4>
+                    <p>You don't have any active matches or conversations. Start by finding new students to challenge!</p>
+                    <hr>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        <a href="{% url 'match' %}" class="btn btn-primary">Find Matches</a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
