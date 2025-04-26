@@ -48,7 +48,12 @@
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{% url 'profile' %}">My Profile</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
+                            <li>
+                                <form id="logout-form" method="POST" action="{% url 'logout' %}">
+                                    {% csrf_token %}
+                                    <a class="dropdown-item" href="javascript:void(0)" onclick="document.getElementById('logout-form').submit()">Logout</a>
+                                </form>
+                            </li>
                         </ul>
                     </li>
                     {% else %}
